@@ -1,5 +1,7 @@
-FROM golang:1.17-alpine3.13 AS fabconnect-builder
-RUN apk add make
+FROM golang:1.16.15-alpine3.15 AS fabconnect-builder
+RUN apk add make git
+ENV GODEBUG='x509ignoreCN=0'
+RUN echo 'GODEBUG=x509ignoreCN=0' > ~/.profile
 WORKDIR /fabconnect
 ADD go.mod go.sum ./
 RUN go mod download
@@ -11,4 +13,6 @@ WORKDIR /fabconnect
 COPY --from=fabconnect-builder /fabconnect/fabconnect ./
 ADD ./openapi ./openapi/
 RUN ln -s /fabconnect/fabconnect /usr/bin/fabconnect
+ENV GODEBUG='x509ignoreCN=0'
+RUN echo 'GODEBUG=x509ignoreCN=0' > ~/.profile
 ENTRYPOINT [ "fabconnect" ]
