@@ -62,37 +62,24 @@ func (e *eventClientWrapper) subscribeEvent(subInfo *eventsapi.SubscriptionInfo,
 		log.Errorf("Failed to get event client. %s", err)
 		return nil, nil, nil, errors.Errorf("Failed to get event client. %s", err)
 	}
-	if subInfo.Filter.ChaincodeId != "" {
-		reg, notifier, err := eventClient.RegisterChaincodeEvent(subInfo.Filter.ChaincodeId, subInfo.Filter.EventFilter)
-		if err != nil {
-			return nil, nil, nil, errors.Errorf("Failed to subscribe to chaincode %s events. %s", subInfo.Filter.ChaincodeId, err)
-		}
-		log.Infof("Subscribed to events in channel %s chaincode %s from block %d", subInfo.ChannelId, subInfo.Filter.ChaincodeId, since)
-		regWrapper := &RegistrationWrapper{
-			registration: reg,
-			eventClient:  eventClient,
-		}
-		return regWrapper, nil, notifier, nil
-	} else {
-		blockType := subInfo.Filter.BlockType
-		var blockfilter fab.BlockFilter
-		if blockType == eventsapi.BlockType_TX {
-			blockfilter = headertypefilter.New(common.HeaderType_ENDORSER_TRANSACTION)
-		} else if blockType == eventsapi.BlockType_Config {
-			blockfilter = headertypefilter.New(common.HeaderType_CONFIG, common.HeaderType_CONFIG_UPDATE)
-		}
-
-		reg, notifier, err := eventClient.RegisterBlockEvent(blockfilter)
-		if err != nil {
-			return nil, nil, nil, errors.Errorf("Failed to subscribe to block events. %s", err)
-		}
-		log.Infof("Subscribed to events in channel %s from block %d", subInfo.ChannelId, since)
-		regWrapper := &RegistrationWrapper{
-			registration: reg,
-			eventClient:  eventClient,
-		}
-		return regWrapper, notifier, nil, nil
+	blockType := subInfo.Filter.BlockType
+	var blockfilter fab.BlockFilter
+	if blockType == eventsapi.BlockType_TX {
+		blockfilter = headertypefilter.New(common.HeaderType_ENDORSER_TRANSACTION)
+	} else if blockType == eventsapi.BlockType_Config {
+		blockfilter = headertypefilter.New(common.HeaderType_CONFIG, common.HeaderType_CONFIG_UPDATE)
 	}
+
+	reg, notifier, err := eventClient.RegisterBlockEvent(blockfilter)
+	if err != nil {
+		return nil, nil, nil, errors.Errorf("Failed to subscribe to block events. %s", err)
+	}
+	log.Infof("Subscribed to events in channel %s from block %d", subInfo.ChannelId, since)
+	regWrapper := &RegistrationWrapper{
+		registration: reg,
+		eventClient:  eventClient,
+	}
+	return regWrapper, notifier, nil, nil
 }
 
 func (e *eventClientWrapper) getEventClient(channelId, signer string, since uint64, chaincodeId string) (eventClient *event.Client, err error) {
